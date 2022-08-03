@@ -5,28 +5,44 @@
 using namespace std;
 using namespace Eigen;
 
+int nx = 4, ny = 3, nz = 3;
+int n = nx * ny * nz;
+int m = ny * nz;
+
 void initMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, VectorXd &known_value){
-	A.insert(0, 0) = 1;
-	A.insert(0, 1) = 2;
-	A.insert(1, 0) = 2;
-    A.insert(1, 1) = 2;
-	A.insert(1, 3) = 1;
-	A.insert(3, 1) = 3;
-	A.insert(3, 3) = 4;
-	
-	A.insert(2, 2) = 0;
-	A.insert(4, 4) = 0;
+	for(int i = 0; i < n; ++i){
+		A.insert(i, i) = 1;
+		if(i+1 >= 0 && i+1 < n){
+			A.insert(i, i+1) = -1;
+			A.insert(i+1, i) = -1;
+			b[i] = 0.;
+		}
+	}
 
-	known_index[0] = 2;
-	known_index[1] = 4;
-	known_value[0] = 0;
-	known_value[1] = 0;
+	int ix = nx-1;
+	int idx = 0;
+	int i = 0;
+	for(int iy = 0; iy < ny; ++iy){
+		for(int iz = 0; iz < nz; ++iz){
+			idx = ix * ny * nz + iy * nz + iz;
+			A.coeffRef(idx, idx) = 0;
+			known_index[i] = idx;
+			known_value[i] = 0;
+			i++;
+		}
+	}
 
-	b << 1, 4, 0, 2, 0;
+	ix = 0;
+	for(int iy = 0; iy < ny; ++iy){
+		for(int iz = 0; iz < nz; ++iz){
+			idx = ix * ny * nz + iy * nz + iz;
+			b[idx] = -0.01;
+		}
+	}
+
 }
 
 int main(){
-    int n = 5, m = 2;
 	SparseMatrix<double> A(n,n);
 	VectorXd b(n), x;	
 	VectorXi known_index(m);
@@ -34,14 +50,10 @@ int main(){
 
 	initMats(A, b, known_index, known_value);
 
-	// SparseLU<SparseMatrix<double>> solver;
-	// solver.compute(A);
-	// x = solver.solve(b);
-
 	x = linear_solver<double>(A, b, known_index, known_value);
 
 
-	for (int i = 0; i < x.rows(); i++){
+	for (int i = 0; i < x.rows(); ++i){
 		cout << "x" << i << " = " << x(i) << endl;
 	}
 	return 0;
