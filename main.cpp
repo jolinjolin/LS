@@ -96,7 +96,7 @@ void initMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, Vecto
 				A.coeffRef(idx, idx) += 1;
 				for (int j = 0; j < direct.size(); ++j)
 				{
-					int jx = direct[j][0] + ix, jy = direct[j][1] + iy, jz = direct[j][1] + iz;
+					int jx = direct[j][0] + ix, jy = direct[j][1] + iy, jz = direct[j][2] + iz;
 					if (jx >= 0 && jx < nx && jy >= 0 && jy < ny && jz >= 0 && jz < nz)
 					{
 						int jdx = jx * ny * nz + jy * nz + jz;
