@@ -1,1 +1,7 @@
 main
+main.o
+.sconsign.dblite
+Makefile
+tmp
+.vscode
+.DS_Store
