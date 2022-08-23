@@ -49,8 +49,10 @@ void init_arg()
 }
 void output_data_field(plint iT)
 {
-    VtkImageOutput3D<T> VtkOut00(createFileName("displacement", iT, 7), 1.);
-    VtkOut00.writeData<D, T>(*displacement, "displacement", 1.);
+	if(iT % 10 == 0){
+		VtkImageOutput3D<T> VtkOut00(createFileName("displacement", iT, 7), 1.);
+		VtkOut00.writeData<D, T>(*displacement, "displacement", 1.);
+	}
 }
 void copy_to_field(VectorXd x)
 {
@@ -158,11 +160,13 @@ int main()
 
 	initMats(A, b, known_index, known_value);
 	// std::cout << MatrixXd(A) << std::endl;
-
-	x = linear_solver<double>(A, b, known_index, known_value);
-
 	create_field();
-	copy_to_field(x);
+
+	for(int iT = 0; iT <= 10; ++iT) {
+		x = linear_solver<double>(A, b, known_index, known_value);
+		copy_to_field(x);
+		output_data_field(iT);
+	}
 
 	// for (int i = 0; i < x.rows(); ++i)
 	// {
@@ -182,7 +186,6 @@ int main()
 	// 	}
 	// }
 
-	output_data_field(0);
 	clean_up();
 	return 0;
 }
