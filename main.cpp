@@ -21,6 +21,7 @@ MultiTensorField3D<T, D> *displacement;
 std::vector<MultiBlock3D *> dataField;
 
 int nx, ny, nz, n, m;
+T dx, k_n;
 Box3D domain;
 
 void init_param()
@@ -30,6 +31,9 @@ void init_param()
     nz = 3;
     n = nx * ny * nz;
 	m = ny * nz;
+
+	dx = 1.0;
+	k_n = 1.0;
 
     domain = Box3D(0,nx-1, 0, ny-1, 0, nz-1);
 
@@ -102,8 +106,8 @@ void initMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, Vecto
 					if (jx >= 0 && jx < nx && jy >= 0 && jy < ny && jz >= 0 && jz < nz)
 					{
 						int jdx = jx * ny * nz + jy * nz + jz;
-						A.coeffRef(jdx, jdx) += 1;
-						A.coeffRef(idx, jdx) += -1;
+						A.coeffRef(jdx, jdx) += k_n;
+						A.coeffRef(idx, jdx) += -k_n;
 					}
 				}
 			}
