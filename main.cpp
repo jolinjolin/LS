@@ -6,6 +6,8 @@
 #include "palabos3D.h"
 #include "palabos3D.hh"
 
+#include "lsFields.hh"
+
 using namespace plb;
 using namespace std;
 using namespace Eigen;
@@ -17,12 +19,14 @@ typedef double T;
 #define ADESCRIPTOR descriptors::AdvectionDiffusionD3Q19Descriptor
 #define ADYNAMICS AdvectionDiffusionBGKdynamics
 
-MultiTensorField3D<T, D> *displacement;
+MultiTensorField3D<T, D> *displace, *forceOld, *forceNew, *velocity;
 std::vector<MultiBlock3D *> dataField;
 
 int nx, ny, nz, n, m;
-T dx, k_n;
+T dx, dt;
+T k_n, mass;
 Box3D domain;
+plb::Array<T,D> init_force;
 
 void init_param()
 {
@@ -33,7 +37,11 @@ void init_param()
 	m = ny * nz;
 
 	dx = 1.0;
+	dt = 1.0;
 	k_n = 1.0;
+	mass = 1.0;
+
+	init_force =plb::Array<T,D>(0.01, 0., 0.);
 
     domain = Box3D(0,nx-1, 0, ny-1, 0, nz-1);
 
@@ -41,21 +49,47 @@ void init_param()
 
 void create_field()
 {
-	displacement = new MultiTensorField3D<T, D>(nx, ny, nz);
+	displace = new MultiTensorField3D<T, D>(nx, ny, nz);
+	forceOld = new MultiTensorField3D<T, D>(nx, ny, nz);
+	forceNew = new MultiTensorField3D<T, D>(nx, ny, nz);
+	velocity = new MultiTensorField3D<T, D>(nx, ny, nz);
 
-	displacement->periodicity().toggle(0, false);
-    displacement->periodicity().toggle(1, false);
-    displacement->periodicity().toggle(2, false);
+	displace->periodicity().toggle(0, false);
+    displace->periodicity().toggle(1, false);
+    displace->periodicity().toggle(2, false);
+	forceOld->periodicity().toggle(0, false);
+    forceOld->periodicity().toggle(1, false);
+    forceOld->periodicity().toggle(2, false);
+	forceNew->periodicity().toggle(0, false);
+    forceNew->periodicity().toggle(1, false);
+    forceNew->periodicity().toggle(2, false);
+	velocity->periodicity().toggle(0, false);
+    velocity->periodicity().toggle(1, false);
+    velocity->periodicity().toggle(2, false);
 }
 void init_arg()
 {
+	dataField.push_back(displace);
+	dataField.push_back(forceOld);
+	dataField.push_back(forceNew);
+	dataField.push_back(velocity);
+}
+void init_field()
+{
+	applyProcessingFunctional(new initializeFieldsLS<T>(), domain, dataField);
+}
+void ls_motion()
+{
+	applyProcessingFunctional(new updateFieldsLS<T>(init_force), domain, dataField);
+	applyProcessingFunctional(new calFroceLS<T, ADESCRIPTOR>(dx, dt, k_n), domain, dataField);
+	applyProcessingFunctional(new verletUpdateLS<T>(dx, dt, mass), domain, dataField);
 
 }
 void output_data_field(plint iT)
 {
-	if(iT % 10 == 0){
+	if(iT % 100 == 0){
 		VtkImageOutput3D<T> VtkOut00(createFileName("displacement", iT, 7), 1.);
-		VtkOut00.writeData<D, T>(*displacement, "displacement", 1.);
+		VtkOut00.writeData<D, T>(*displace, "displacement", 1.);
 	}
 }
 void copy_to_field(VectorXd x)
@@ -66,10 +100,10 @@ void copy_to_field(VectorXd x)
 			for(int iz = 0; iz < nz; ++iz){
 				idx = ix * ny * nz + iy * nz + iz;
 				if(isnan(x[idx])){
-					displacement->get(ix, iy, iz)[0] = 0.;
+					displace->get(ix, iy, iz)[0] = 0.;
 				}
 				else{
-					displacement->get(ix, iy, iz)[0] = x[idx];
+					displace->get(ix, iy, iz)[0] = x[idx];
 				}
 			}
 		}
@@ -77,7 +111,10 @@ void copy_to_field(VectorXd x)
 }
 void clean_up()
 {
-    delete displacement;
+    delete displace;
+	delete forceOld;
+	delete forceNew;
+	delete velocity;
 }
 
 void initMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, VectorXd &known_value)
@@ -141,11 +178,11 @@ void initMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, Vecto
 				idx = ix * ny * nz + iy * nz + iz;
 				if (ix == 0)
 				{
-					b[idx] = 0.01;
+					b[idx] = init_force[0];
 				}
 				else
 				{
-					b[idx] = 0;
+					b[idx] = 0.;
 				}
 			}
 		}
@@ -165,10 +202,13 @@ int main()
 	initMats(A, b, known_index, known_value);
 	// std::cout << MatrixXd(A) << std::endl;
 	create_field();
+	init_arg();
+	init_field();
 
 	for(int iT = 0; iT <= 10; ++iT) {
 		x = linear_solver<double>(A, b, known_index, known_value);
 		copy_to_field(x);
+		ls_motion();
 		output_data_field(iT);
 	}
 
