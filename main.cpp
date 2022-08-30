@@ -36,8 +36,8 @@ void init_param()
     n = nx * ny * nz;
 	m = ny * nz;
 
-	dx = 1.0;
-	dt = 1.0;
+	dx = 0.01;
+	dt = 0.001;
 	k_n = 1.0;
 	mass = 1.0;
 
@@ -54,18 +54,18 @@ void create_field()
 	forceNew = new MultiTensorField3D<T, D>(nx, ny, nz);
 	velocity = new MultiTensorField3D<T, D>(nx, ny, nz);
 
-	displace->periodicity().toggle(0, false);
-    displace->periodicity().toggle(1, false);
-    displace->periodicity().toggle(2, false);
-	forceOld->periodicity().toggle(0, false);
-    forceOld->periodicity().toggle(1, false);
-    forceOld->periodicity().toggle(2, false);
-	forceNew->periodicity().toggle(0, false);
-    forceNew->periodicity().toggle(1, false);
-    forceNew->periodicity().toggle(2, false);
-	velocity->periodicity().toggle(0, false);
-    velocity->periodicity().toggle(1, false);
-    velocity->periodicity().toggle(2, false);
+	displace->periodicity().toggle(0, true);
+    displace->periodicity().toggle(1, true);
+    displace->periodicity().toggle(2, true);
+	forceOld->periodicity().toggle(0, true);
+    forceOld->periodicity().toggle(1, true);
+    forceOld->periodicity().toggle(2, true);
+	forceNew->periodicity().toggle(0, true);
+    forceNew->periodicity().toggle(1, true);
+    forceNew->periodicity().toggle(2, true);
+	velocity->periodicity().toggle(0, true);
+    velocity->periodicity().toggle(1, true);
+    velocity->periodicity().toggle(2, true);
 }
 void init_arg()
 {
@@ -78,16 +78,16 @@ void init_field()
 {
 	applyProcessingFunctional(new initializeFieldsLS<T>(), domain, dataField);
 }
-void ls_motion()
+void ls_motion(plint iT)
 {
 	applyProcessingFunctional(new updateFieldsLS<T>(init_force), domain, dataField);
 	applyProcessingFunctional(new calFroceLS<T, ADESCRIPTOR>(dx, dt, k_n), domain, dataField);
-	applyProcessingFunctional(new verletUpdateLS<T>(dx, dt, mass), domain, dataField);
+	applyProcessingFunctional(new verletUpdateLS<T>(dx, dt, mass, iT), domain, dataField);
 
 }
 void output_data_field(plint iT)
 {
-	if(iT % 100 == 0){
+	if(iT % 1000 == 0){
 		VtkImageOutput3D<T> VtkOut00(createFileName("displacement", iT, 7), 1.);
 		VtkOut00.writeData<D, T>(*displace, "displacement", 1.);
 	}
@@ -139,8 +139,9 @@ void initMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, Vecto
 				A.coeffRef(idx, idx) += 1;
 				for (int j = 0; j < direct.size(); ++j)
 				{
-					int jx = direct[j][0] + ix, jy = direct[j][1] + iy, jz = direct[j][2] + iz;
-					if (jx >= 0 && jx < nx && jy >= 0 && jy < ny && jz >= 0 && jz < nz)
+					// int jx = direct[j][0] + ix, jy = direct[j][1] + iy, jz = direct[j][2] + iz;
+					// if (jx >= 0 && jx < nx && jy >= 0 && jy < ny && jz >= 0 && jz < nz)
+					int jx = (direct[j][0] + ix + nx)%nx, jy = (direct[j][1] + iy + ny) % ny, jz = (direct[j][2] + iz + nz) % nz;
 					{
 						int jdx = jx * ny * nz + jy * nz + jz;
 						A.coeffRef(jdx, jdx) += k_n;
@@ -205,10 +206,10 @@ int main()
 	init_arg();
 	init_field();
 
-	for(int iT = 0; iT <= 10; ++iT) {
+	for(int iT = 0; iT <= 10000; ++iT) {
 		x = linear_solver<double>(A, b, known_index, known_value);
 		copy_to_field(x);
-		ls_motion();
+		ls_motion(iT);
 		output_data_field(iT);
 	}
 

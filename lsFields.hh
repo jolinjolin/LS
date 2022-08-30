@@ -168,7 +168,7 @@ namespace plb
   class verletUpdateLS : public BoxProcessingFunctional3D
   {
   public:
-    verletUpdateLS(T dx_, T dt_, T mass_) : dx(dx_), dt(dt_), mass(mass_)
+    verletUpdateLS(T dx_, T dt_, T mass_, plint iT_) : dx(dx_), dt(dt_), mass(mass_), iT(iT_)
     {
     }
     virtual void processGenericBlocks(Box3D domain, vector<AtomicBlock3D *> blocks)
@@ -186,9 +186,6 @@ namespace plb
         for (plint y0 = domain.y0; y0 <= domain.y1; ++y0)
           for (plint z0 = domain.z0; z0 <= domain.z1; ++z0)
           {
-            if(x0 + offset.x == 0){
-              // pcout << forceNew.get(x0, y0, z0)[0] << " " << forceNew.get(x0, y0, z0)[1] << " " << forceNew.get(x0, y0, z0)[2] << endl ;
-            }
             Array<T, 3> acc, acc_new, vel;
             acc = forceOld.get(x0, y0, z0) * rmass;
             vel = velocity.get(x0, y0, z0);
@@ -202,6 +199,12 @@ namespace plb
             }
             velocity.get(x0, y0, z0) = vel;
             forceOld.get(x0, y0, z0) = forceNew.get(x0, y0, z0);
+
+            if(x0 + offset.x == 0 && iT == 5000){
+              // pcout << forceNew.get(x0, y0, z0)[0] << " " << forceNew.get(x0, y0, z0)[1] << " " << forceNew.get(x0, y0, z0)[2]
+              // << ", " << displace.get(x0, y0, z0)[0] << " " << displace.get(x0, y0, z0)[1] << " " << displace.get(x0, y0, z0)[2]
+              // << ", " << vel[0] << " " << vel[1] << " " << vel[2] << endl;
+            }
           }
     }
     //...........................................................................................................................
@@ -225,6 +228,7 @@ namespace plb
 
   private:
     T dx, dt, mass;
+    plint iT;
   };
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
