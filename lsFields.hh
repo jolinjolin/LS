@@ -71,11 +71,11 @@ namespace plb
         for (plint y0 = domain.y0; y0 <= domain.y1; ++y0)
           for (plint z0 = domain.z0; z0 <= domain.z1; ++z0)
           {
-            if (x0 + offset.x == 0)
-            {
-              forceNew.get(x0, y0, z0) += init_force;
-            }
-            else
+            // if (x0 + offset.x == 0)
+            // {
+            //   forceNew.get(x0, y0, z0) += init_force;
+            // }
+            // else
             {
               forceNew.get(x0, y0, z0) = Array<T, 3>(0., 0., 0.);
             }
@@ -129,7 +129,7 @@ namespace plb
 
               u_ij = Array<T, 3>(u_j[0] - u_i[0], u_j[1] - u_i[1], u_j[2] - u_i[2]);
               T u_ij_sq = u_ij[0] * u_ij[0] + u_ij[1] * u_ij[1] + u_ij[2] * u_ij[2];
-              // if (u_ij_sq < 1.732 * 1.732)
+              if (u_ij_sq < 1.732 * 1.732)
               {
                 T norm = T(ADESCRIPTOR<T>::c[i][0] * ADESCRIPTOR<T>::c[i][0] + ADESCRIPTOR<T>::c[i][1] * ADESCRIPTOR<T>::c[i][1] + ADESCRIPTOR<T>::c[i][2] * ADESCRIPTOR<T>::c[i][2]);
                 norm = sqrt(norm);
@@ -233,11 +233,14 @@ namespace plb
             velocity.get(x0, y0, z0) = vel;
             forceOld.get(x0, y0, z0) = forceNew.get(x0, y0, z0);
 
-            // if(x0 + offset.x == 2 && iT == 18000){
-            //   pcout << forceNew.get(x0, y0, z0)[0] << " " << forceNew.get(x0, y0, z0)[1] << " " << forceNew.get(x0, y0, z0)[2]
-            //   << ", " << displace.get(x0, y0, z0)[0] << " " << displace.get(x0, y0, z0)[1] << " " << displace.get(x0, y0, z0)[2]
-            //   << ", " << vel[0] << " " << vel[1] << " " << vel[2] << endl;
-            // }
+            if(x0 + offset.x == 0 && iT %400 == 0){
+              // pcout << forceNew.get(x0, y0, z0)[0] << " " << forceNew.get(x0, y0, z0)[1] << " " << forceNew.get(x0, y0, z0)[2]
+              // << ", " << displace.get(x0, y0, z0)[0] << " " << displace.get(x0, y0, z0)[1] << " " << displace.get(x0, y0, z0)[2]
+              // << ", " << vel[0] << " " << vel[1] << " " << vel[2] << endl;
+              pcout << forceNew.get(x0, y0, z0)[0] 
+              << ", " << displace.get(x0, y0, z0)[0]
+              << ", " << vel[0] << endl;
+            }
           }
     }
     //...........................................................................................................................

@@ -14,9 +14,9 @@ using namespace Eigen;
 
 typedef double T;
 #define D 3
-#define Q 7
+#define Q 19
 
-#define ADESCRIPTOR descriptors::AdvectionDiffusionD3Q7Descriptor
+#define ADESCRIPTOR descriptors::AdvectionDiffusionD3Q19Descriptor
 #define ADYNAMICS AdvectionDiffusionBGKdynamics
 
 MultiTensorField3D<T, D> *displace, *forceOld, *forceNew, *velocity;
@@ -28,11 +28,22 @@ T k_n, mass;
 Box3D domain;
 plb::Array<T,D> init_force;
 
+T damping_coeff;
+
+vector<vector<int>> direct = {
+	{-1, 0, 0}, {0, -1, 0}, {0, 0, -1}, 
+	{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, 
+	{1, 1, 0}, {0, 1, 1}, {1, 0, 1},
+	{-1, -1, 0}, {0, -1, -1}, {-1, 0, -1}, 
+	{-1, 1, 0}, {-1, 0, 1}, {0, -1, 1},
+	{1, -1, 0}, {1, 0, -1}, {0, 1, -1}, 
+};
+
 void init_param()
 {
-    nx = 8;
-    ny = 5;
-    nz = 5;
+    nx = 4;
+    ny = 4;
+    nz = 4;
     n = nx * ny * nz;
 	m = ny * nz;
 
@@ -40,8 +51,10 @@ void init_param()
 	dt = 0.001;
 	k_n = 1.0;
 	mass = 1.0;
+	
+	damping_coeff = -0.003;
 
-	init_force =plb::Array<T,D>(1e-3, 0., 0.);
+	init_force =plb::Array<T,D>(1e-4, 0., 0.);
 
     domain = Box3D(0,nx-1, 0, ny-1, 0, nz-1);
 
@@ -103,7 +116,7 @@ void copy_to_field(VectorXd x)
 					displace->get(ix, iy, iz)[0] = 0.;
 				}
 				else{
-					displace->get(ix, iy, iz)[0] = x[idx];
+					displace->get(ix, iy, iz)[0] += x[idx];
 				}
 			}
 		}
@@ -119,14 +132,6 @@ void clean_up()
 
 void initMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, VectorXd &known_value)
 {
-	vector<vector<int>> direct = {
-		{-1, 0, 0}, {0, -1, 0}, {0, 0, -1}, 
-		{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, 
-		{1, 1, 0}, {0, 1, 1}, {1, 0, 1},
-		{-1, -1, 0}, {0, -1, -1}, {-1, 0, -1}, 
-		{-1, 1, 0}, {-1, 0, 1}, {0, -1, 1},
-		{1, -1, 0}, {1, 0, -1}, {0, 1, -1}, 
-	};
 	// fill A non-zeros
 	int idx = 0;
 	for (int ix = 0; ix < nx; ++ix)
@@ -136,16 +141,17 @@ void initMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, Vecto
 			for (int iz = 0; iz < ny; ++iz)
 			{
 				idx = ix * ny * nz + iy * nz + iz;
-				A.coeffRef(idx, idx) += 1;
+				A.coeffRef(idx, idx) += (k_n + damping_coeff);
 				for (int j = 0; j < direct.size(); ++j)
 				{
-					// int jx = direct[j][0] + ix, jy = direct[j][1] + iy, jz = direct[j][2] + iz;
-					// if (jx >= 0 && jx < nx && jy >= 0 && jy < ny && jz >= 0 && jz < nz)
-					int jx = (direct[j][0] + ix + nx)%nx, jy = (direct[j][1] + iy + ny) % ny, jz = (direct[j][2] + iz + nz) % nz;
+					int jx = direct[j][0] + ix;
+					int jy = 0, jz = 0;
+					if (jx >= 0 && jx < nx)
 					{
+						jy = (direct[j][1] + iy + ny) % ny, jz = (direct[j][2] + iz + nz) % nz;
 						int jdx = jx * ny * nz + jy * nz + jz;
-						A.coeffRef(jdx, jdx) += k_n;
-						A.coeffRef(idx, jdx) += -k_n;
+						A.coeffRef(jdx, jdx) += (k_n + damping_coeff);
+						A.coeffRef(idx, jdx) += -(k_n + damping_coeff);
 					}
 				}
 			}
@@ -170,21 +176,64 @@ void initMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, Vecto
 	}
 
 	// fill b zeros and nonzeros
-	for (int ix = 0; ix < 1; ++ix)
+	for (int ix = 0; ix < nx; ++ix)
 	{
 		for (int iy = 0; iy < ny; ++iy)
 		{
 			for (int iz = 0; iz < nz; ++iz)
 			{
 				idx = ix * ny * nz + iy * nz + iz;
-				if (ix == 0)
-				{
-					b[idx] = init_force[0];
-				}
-				else
+				if (ix == nx-1)
 				{
 					b[idx] = 0.;
 				}
+				else {
+					b[idx] = damping_coeff * displace->get(ix, iy, iz)[0];
+					if(ix == 0) {
+						b[idx] += init_force[0];
+					}
+				}
+			}
+		}
+	}
+}
+
+void updateMats(SparseMatrix<double> &A, VectorXd &b, VectorXi &known_index, VectorXd &known_value)
+{
+	int idx = 0;
+	for (int ix = 0; ix < nx-1; ++ix)
+	{
+		for (int iy = 0; iy < ny; ++iy)
+		{
+			for (int iz = 0; iz < nz; ++iz)
+			{
+				idx = ix * ny * nz + iy * nz + iz;
+				b[idx] = damping_coeff * displace->get(ix, iy, iz)[0];
+				// b[idx] = 0.;
+				if (ix == 0)
+				{
+					b[idx] += init_force[0];
+				}				
+			}
+		}
+	}
+}
+
+void outputMats(VectorXd & x){
+	// for (int i = 0; i < x.rows(); ++i)
+	// {
+	// 	cout << "x" << i << " = " << x(i) << endl;
+	// }
+
+	for (int ix = 0; ix < nx; ++ix)
+	{
+		for (int iy = 0; iy < ny; ++iy)
+		{
+			for (int iz = 0; iz < nz; ++iz)
+			{
+				int idx = ix * ny * nz + iy * nz + iz;
+				pcout << ix << " " << iy << " " << iz << " " << x[idx] << endl;
+
 			}
 		}
 	}
@@ -200,36 +249,22 @@ int main()
 	VectorXi known_index(m);
 	VectorXd known_value(m);
 
-	initMats(A, b, known_index, known_value);
-	// std::cout << MatrixXd(A) << std::endl;
 	create_field();
 	init_arg();
 	init_field();
+	initMats(A, b, known_index, known_value);
+	// std::cout << MatrixXd(A) << std::endl;
 
-	for(int iT = 0; iT <= 10000; ++iT) {
+	for(int iT = 0; iT <= 1200; ++iT) {
 		x = linear_solver<double>(A, b, known_index, known_value);
 		copy_to_field(x);
 		ls_motion(iT);
+		updateMats(A, b, known_index, known_value);
 		output_data_field(iT);
+		if(iT % 400 == 0) {
+			outputMats(x);
+		}
 	}
-
-	// for (int i = 0; i < x.rows(); ++i)
-	// {
-	// 	cout << "x" << i << " = " << x(i) << endl;
-	// }
-
-	// for (int ix = 0; ix < nx; ++ix)
-	// {
-	// 	for (int iy = 0; iy < ny; ++iy)
-	// 	{
-	// 		for (int iz = 0; iz < nz; ++iz)
-	// 		{
-	// 			int idx = ix * ny * nz + iy * nz + iz;
-	// 			pcout << ix << " " << iy << " " << iz << " " << x[idx] << endl;
-
-	// 		}
-	// 	}
-	// }
 
 	clean_up();
 	return 0;
