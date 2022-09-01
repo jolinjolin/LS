@@ -14,9 +14,9 @@ using namespace Eigen;
 
 typedef double T;
 #define D 3
-#define Q 18
+#define Q 7
 
-#define ADESCRIPTOR descriptors::AdvectionDiffusionD3Q19Descriptor
+#define ADESCRIPTOR descriptors::AdvectionDiffusionD3Q7Descriptor
 #define ADYNAMICS AdvectionDiffusionBGKdynamics
 
 MultiTensorField3D<T, D> *displace, *forceOld, *forceNew, *velocity;
@@ -30,9 +30,9 @@ plb::Array<T,D> init_force;
 
 void init_param()
 {
-    nx = 4;
-    ny = 3;
-    nz = 3;
+    nx = 8;
+    ny = 5;
+    nz = 5;
     n = nx * ny * nz;
 	m = ny * nz;
 
@@ -41,7 +41,7 @@ void init_param()
 	k_n = 1.0;
 	mass = 1.0;
 
-	init_force =plb::Array<T,D>(0.01, 0., 0.);
+	init_force =plb::Array<T,D>(1e-3, 0., 0.);
 
     domain = Box3D(0,nx-1, 0, ny-1, 0, nz-1);
 
@@ -81,7 +81,7 @@ void init_field()
 void ls_motion(plint iT)
 {
 	applyProcessingFunctional(new updateFieldsLS<T>(init_force), domain, dataField);
-	applyProcessingFunctional(new calFroceLS<T, ADESCRIPTOR>(dx, dt, k_n), domain, dataField);
+	applyProcessingFunctional(new calFroceLS<T, ADESCRIPTOR>(dx, dt, k_n, iT), domain, dataField);
 	applyProcessingFunctional(new verletUpdateLS<T>(dx, dt, mass, iT), domain, dataField);
 
 }
