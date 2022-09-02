@@ -233,14 +233,14 @@ namespace plb
             velocity.get(x0, y0, z0) = vel;
             forceOld.get(x0, y0, z0) = forceNew.get(x0, y0, z0);
 
-            if(x0 + offset.x == 0 && iT %400 == 0){
-              // pcout << forceNew.get(x0, y0, z0)[0] << " " << forceNew.get(x0, y0, z0)[1] << " " << forceNew.get(x0, y0, z0)[2]
-              // << ", " << displace.get(x0, y0, z0)[0] << " " << displace.get(x0, y0, z0)[1] << " " << displace.get(x0, y0, z0)[2]
-              // << ", " << vel[0] << " " << vel[1] << " " << vel[2] << endl;
-              pcout << forceNew.get(x0, y0, z0)[0] 
-              << ", " << displace.get(x0, y0, z0)[0]
-              << ", " << vel[0] << endl;
-            }
+            // if(x0 + offset.x == 0 && iT %800 == 0){
+            //   // pcout << forceNew.get(x0, y0, z0)[0] << " " << forceNew.get(x0, y0, z0)[1] << " " << forceNew.get(x0, y0, z0)[2]
+            //   // << ", " << displace.get(x0, y0, z0)[0] << " " << displace.get(x0, y0, z0)[1] << " " << displace.get(x0, y0, z0)[2]
+            //   // << ", " << vel[0] << " " << vel[1] << " " << vel[2] << endl;
+            //   pcout << forceNew.get(x0, y0, z0)[0] 
+            //   << ", " << displace.get(x0, y0, z0)[0]
+            //   << ", " << vel[0] << endl;
+            // }
           }
     }
     //...........................................................................................................................
