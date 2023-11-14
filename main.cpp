@@ -26,38 +26,49 @@ int nx, ny, nz, n, m;
 T dx, dt;
 T k_n, mass;
 Box3D domain;
-plb::Array<T,D> init_force;
+plb::Array<T, D> init_force;
 
 T damping_coeff;
 
 vector<vector<int>> direct = {
-	{-1, 0, 0}, {0, -1, 0}, {0, 0, -1}, 
-	{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, 
-	{1, 1, 0}, {0, 1, 1}, {1, 0, 1},
-	{-1, -1, 0}, {0, -1, -1}, {-1, 0, -1}, 
-	{-1, 1, 0}, {-1, 0, 1}, {0, -1, 1},
-	{1, -1, 0}, {1, 0, -1}, {0, 1, -1}, 
+	{-1, 0, 0},
+	{0, -1, 0},
+	{0, 0, -1},
+	{1, 0, 0},
+	{0, 1, 0},
+	{0, 0, 1},
+	{1, 1, 0},
+	{0, 1, 1},
+	{1, 0, 1},
+	{-1, -1, 0},
+	{0, -1, -1},
+	{-1, 0, -1},
+	{-1, 1, 0},
+	{-1, 0, 1},
+	{0, -1, 1},
+	{1, -1, 0},
+	{1, 0, -1},
+	{0, 1, -1},
 };
 
 void init_param()
 {
-    nx = 4;
-    ny = 4;
-    nz = 4;
-    n = nx * ny * nz;
+	nx = 4;
+	ny = 4;
+	nz = 4;
+	n = nx * ny * nz;
 	m = ny * nz;
 
 	dx = 0.01;
 	dt = 0.001;
 	k_n = 1.0;
 	mass = 1.0;
-	
+
 	damping_coeff = 0.003;
 
-	init_force =plb::Array<T,D>(1e-3, 0., 0.);
+	init_force = plb::Array<T, D>(1e-3, 0., 0.);
 
-    domain = Box3D(0,nx-1, 0, ny-1, 0, nz-1);
-
+	domain = Box3D(0, nx - 1, 0, ny - 1, 0, nz - 1);
 }
 
 void create_field()
@@ -68,17 +79,17 @@ void create_field()
 	velocity = new MultiTensorField3D<T, D>(nx, ny, nz);
 
 	displace->periodicity().toggle(0, true);
-    displace->periodicity().toggle(1, true);
-    displace->periodicity().toggle(2, true);
+	displace->periodicity().toggle(1, true);
+	displace->periodicity().toggle(2, true);
 	forceOld->periodicity().toggle(0, true);
-    forceOld->periodicity().toggle(1, true);
-    forceOld->periodicity().toggle(2, true);
+	forceOld->periodicity().toggle(1, true);
+	forceOld->periodicity().toggle(2, true);
 	forceNew->periodicity().toggle(0, true);
-    forceNew->periodicity().toggle(1, true);
-    forceNew->periodicity().toggle(2, true);
+	forceNew->periodicity().toggle(1, true);
+	forceNew->periodicity().toggle(2, true);
 	velocity->periodicity().toggle(0, true);
-    velocity->periodicity().toggle(1, true);
-    velocity->periodicity().toggle(2, true);
+	velocity->periodicity().toggle(1, true);
+	velocity->periodicity().toggle(2, true);
 }
 void init_arg()
 {
@@ -96,11 +107,11 @@ void ls_motion(plint iT)
 	applyProcessingFunctional(new updateFieldsLS<T>(init_force), domain, dataField);
 	applyProcessingFunctional(new calFroceLS<T, ADESCRIPTOR>(dx, dt, k_n, iT), domain, dataField);
 	applyProcessingFunctional(new verletUpdateLS<T>(dx, dt, mass, iT), domain, dataField);
-
 }
-void output_data_field(plint iT)
+void output_data_field(plint iT) ß
 {
-	if(iT % 1000 == 0){
+	if (iT % 1000 == 0)
+	{
 		VtkImageOutput3D<T> VtkOut00(createFileName("displacement", iT, 7), 1.);
 		VtkOut00.writeData<D, T>(*displace, "displacement", 1.);
 	}
@@ -108,14 +119,19 @@ void output_data_field(plint iT)
 void copy_to_field(VectorXd x)
 {
 	int idx = 0;
-	for(int ix = 0; ix < nx; ++ix){
-		for(int iy = 0; iy < ny; ++iy){
-			for(int iz = 0; iz < nz; ++iz){
+	for (int ix = 0; ix < nx; ++ix)
+	{
+		for (int iy = 0; iy < ny; ++iy)
+		{
+			for (int iz = 0; iz < nz; ++iz)
+			{
 				idx = ix * ny * nz + iy * nz + iz;
-				if(isnan(x[idx])){
+				if (isnan(x[idx]))
+				{
 					displace->get(ix, iy, iz)[0] = 0.;
 				}
-				else{
+				else
+				{
 					displace->get(ix, iy, iz)[0] = x[idx];
 				}
 			}
@@ -124,7 +140,7 @@ void copy_to_field(VectorXd x)
 }
 void clean_up()
 {
-    delete displace;
+	delete displace;
 	delete forceOld;
 	delete forceNew;
 	delete velocity;
@@ -213,7 +229,7 @@ void clean_up()
 // 				if (ix == 0)
 // 				{
 // 					b[idx] += init_force[0];
-// 				}				
+// 				}
 // 			}
 // 		}
 // 	}
@@ -260,7 +276,7 @@ void initMats(SparseMatrix<double> &K, SparseMatrix<double> &C, SparseMatrix<dou
 void updateDisplacement(VectorXd &displace_minus1, VectorXd &displace_minus2, VectorXd &displace_minus3, VectorXd &displace_minus4)
 {
 	int idx = 0;
-	for (int ix = 0; ix < nx-1; ++ix)
+	for (int ix = 0; ix < nx - 1; ++ix)
 	{
 		for (int iy = 0; iy < ny; ++iy)
 		{
@@ -288,11 +304,11 @@ void calDisplacement(SparseMatrix<double> &K, SparseMatrix<double> &C, SparseMat
 			for (int iz = 0; iz < nz; ++iz)
 			{
 				int idx = ix * ny * nz + iy * nz + iz;
-				if(ix == 0)
+				if (ix == 0)
 				{
-					x[idx] += init_force[0]/mass;
+					x[idx] += init_force[0] / mass;
 				}
-				if(ix == nx-1)
+				if (ix == nx - 1)
 				{
 					x[idx] = 0.;
 				}
@@ -300,12 +316,8 @@ void calDisplacement(SparseMatrix<double> &K, SparseMatrix<double> &C, SparseMat
 		}
 	}
 }
-void outputMats(VectorXd & x){
-	// for (int i = 0; i < x.rows(); ++i)
-	// {
-	// 	cout << "x" << i << " = " << x(i) << endl;
-	// }
-
+void outputMats(VectorXd &x)
+{
 	for (int ix = 0; ix < nx; ++ix)
 	{
 		for (int iy = 0; iy < ny; ++iy)
@@ -314,7 +326,6 @@ void outputMats(VectorXd & x){
 			{
 				int idx = ix * ny * nz + iy * nz + iz;
 				pcout << ix << " " << iy << " " << iz << " " << x[idx] << endl;
-
 			}
 		}
 	}
@@ -327,25 +338,20 @@ int main()
 	create_field();
 	init_arg();
 	init_field();
-	// SparseMatrix<double> A(n, n);
-	// VectorXd b(n), x;
-	// VectorXi known_index(m);
-	// VectorXd known_value(m);
-	// initMats(A, b, known_index, known_value);
-	// std::cout << MatrixXd(A) << std::endl;
 
 	SparseMatrix<double> K(n, n), C(n, n), M(n, n);
 	VectorXd x(n), displace_minus1(n), displace_minus2(n), displace_minus3(n), displace_minus4(n);
 	initMats(K, C, M, x, displace_minus1, displace_minus2, displace_minus3, displace_minus4);
 
-	for(int iT = 0; iT <= 20; ++iT) {
+	for (int iT = 0; iT <= 20; ++iT)
+	{
 		// x = linear_solver<double>(A, b, known_index, known_value);
 		calDisplacement(K, C, M, x, displace_minus1, displace_minus2, displace_minus3, displace_minus4);
 		copy_to_field(x);
 		ls_motion(iT);
 		updateDisplacement(displace_minus1, displace_minus2, displace_minus3, displace_minus4);
 		// output_data_field(iT);
-		// if(iT % 10 == 0) 
+		if (iT % 10 == 0)
 		{
 			pcout << iT << endl;
 			outputMats(x);

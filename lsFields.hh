@@ -26,10 +26,10 @@ namespace plb
         for (plint y0 = domain.y0; y0 <= domain.y1; ++y0)
           for (plint z0 = domain.z0; z0 <= domain.z1; ++z0)
           {
-            displace.get(x0, y0, z0) = Array<T,3>(0., 0., 0.);
-            forceOld.get(x0, y0, z0) = Array<T,3>(0., 0., 0.);
-            forceNew.get(x0, y0, z0) = Array<T,3>(0., 0., 0.);
-            velocity.get(x0, y0, z0) = Array<T,3>(0., 0., 0.);
+            displace.get(x0, y0, z0) = Array<T, 3>(0., 0., 0.);
+            forceOld.get(x0, y0, z0) = Array<T, 3>(0., 0., 0.);
+            forceNew.get(x0, y0, z0) = Array<T, 3>(0., 0., 0.);
+            velocity.get(x0, y0, z0) = Array<T, 3>(0., 0., 0.);
           }
     }
     //...........................................................................................................................
@@ -71,11 +71,11 @@ namespace plb
         for (plint y0 = domain.y0; y0 <= domain.y1; ++y0)
           for (plint z0 = domain.z0; z0 <= domain.z1; ++z0)
           {
-            // if (x0 + offset.x == 0)
-            // {
-            //   forceNew.get(x0, y0, z0) += init_force;
-            // }
-            // else
+            if (x0 + offset.x == 0)
+            {
+              forceNew.get(x0, y0, z0) += init_force;
+            }
+            else
             {
               forceNew.get(x0, y0, z0) = Array<T, 3>(0., 0., 0.);
             }
@@ -106,7 +106,7 @@ namespace plb
   class calFroceLS : public BoxProcessingFunctional3D
   {
   public:
-    calFroceLS(T dx_,T dt_, T k_n_, plint iT_) : dx(dx_), dt(dt_), k_n(k_n_), iT(iT_)
+    calFroceLS(T dx_, T dt_, T k_n_, plint iT_) : dx(dx_), dt(dt_), k_n(k_n_), iT(iT_)
     {
     }
     virtual void processGenericBlocks(Box3D domain, vector<AtomicBlock3D *> blocks)
@@ -139,38 +139,8 @@ namespace plb
                 forceNew.get(x0, y0, z0)[0] += k_n * u_ij_n[0];
                 forceNew.get(x0, y0, z0)[1] += k_n * u_ij_n[1];
                 forceNew.get(x0, y0, z0)[2] += k_n * u_ij_n[2];
-                // if(iT == 10000 && x0+offset.x == 1 && y0+offset.y == 1 && z0+offset.z == 1)
-                // {
-                //   pcout << ADESCRIPTOR<T>::c[i][0] << " " <<ADESCRIPTOR<T>::c[i][1] << " " << ADESCRIPTOR<T>::c[i][2] << endl;
-                //   pcout << u_ij[0] << ", " << u_ij[1] << ", " << u_ij[2] << endl;
-                //   pcout << u_ij_n[0] << ", " << u_ij_n[1] << ", " << u_ij_n[2] << endl;
-                // }
-                
-              }
-
-              {
-              // T norm = T(ADESCRIPTOR<T>::c[i][0] * ADESCRIPTOR<T>::c[i][0] + ADESCRIPTOR<T>::c[i][1] * ADESCRIPTOR<T>::c[i][1] + ADESCRIPTOR<T>::c[i][2] * ADESCRIPTOR<T>::c[i][2]);
-              // norm = sqrt(norm);
-              // Array<T,3> r_ij((x1 + u_j[0] - x0 - u_i[0]), (y1 + u_j[1] - y0 - u_i[1]), (z1 + u_j[2] - z0 - u_i[2]));
-              // T r_ij_sq = r_ij[0] * r_ij[0] + r_ij[1] * r_ij[1] + r_ij[2] * r_ij[2];
-              // T r_ij_abs = sqrt(r_ij_sq);
-              // T force_factor = (r_ij_abs-norm)/r_ij_abs;
-              // forceNew.get(x0, y0, z0)[0] += k_n * u_ij[0];
-              // forceNew.get(x0, y0, z0)[1] += k_n * u_ij[1];
-              // forceNew.get(x0, y0, z0)[2] += k_n * u_ij[2];
-
-              // if(iT == 8000 && x0+offset.x == 0 && y0+offset.y == 0 && z0+offset.z == 0)
-              //   {
-              //     pcout << ADESCRIPTOR<T>::c[i][0] << " " <<ADESCRIPTOR<T>::c[i][1] << " " << ADESCRIPTOR<T>::c[i][2] << endl;
-              //     pcout << u_ij[0] << ", " << u_ij[1] << ", " << u_ij[2] << endl;
-              //   }
               }
             }
-
-            // if(iT == 100 && x0+offset.x == 0)
-            //     {
-            //       pcout << forceNew.get(x0, y0, z0)[0] << " " << forceNew.get(x0, y0, z0)[1] << " " << forceNew.get(x0, y0, z0)[2] << endl;
-            //     }
           }
     }
     //...........................................................................................................................
@@ -232,15 +202,6 @@ namespace plb
             }
             velocity.get(x0, y0, z0) = vel;
             forceOld.get(x0, y0, z0) = forceNew.get(x0, y0, z0);
-
-            // if(x0 + offset.x == 0 && iT %800 == 0){
-            //   // pcout << forceNew.get(x0, y0, z0)[0] << " " << forceNew.get(x0, y0, z0)[1] << " " << forceNew.get(x0, y0, z0)[2]
-            //   // << ", " << displace.get(x0, y0, z0)[0] << " " << displace.get(x0, y0, z0)[1] << " " << displace.get(x0, y0, z0)[2]
-            //   // << ", " << vel[0] << " " << vel[1] << " " << vel[2] << endl;
-            //   pcout << forceNew.get(x0, y0, z0)[0] 
-            //   << ", " << displace.get(x0, y0, z0)[0]
-            //   << ", " << vel[0] << endl;
-            // }
           }
     }
     //...........................................................................................................................

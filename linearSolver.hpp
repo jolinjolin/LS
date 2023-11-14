@@ -1,7 +1,7 @@
 #include <Eigen/Eigen>
 #include <Eigen/Sparse>
 
-template<typename T>
+template <typename T>
 Eigen::VectorXd linear_solver(const Eigen::SparseMatrix<T> &A, const Eigen::VectorXd &b, const Eigen::VectorXi &known_index, const Eigen::VectorXd &known_value)
 {
     int n = b.rows();
